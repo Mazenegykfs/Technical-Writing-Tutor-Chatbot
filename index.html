@@ -5,10 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Technical Writing Tutor for Engineers</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            font-weight: 600; /* Bold readable fonts globally */
+        }
+        h1, h2, h3 { 
+            font-weight: 300; /* Thin headings */
         }
         /* Custom scrollbar for a cleaner look */
         #chat-window::-webkit-scrollbar {
@@ -21,6 +27,16 @@
             background-color: #38bdf8; /* sky-400 */
             border-radius: 20px;
             border: 3px solid #f1f5f9; /* slate-100 */
+        }
+        textarea::-webkit-scrollbar, .overflow-y-auto::-webkit-scrollbar {
+            width: 6px;
+        }
+        textarea::-webkit-scrollbar-track, .overflow-y-auto::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        textarea::-webkit-scrollbar-thumb, .overflow-y-auto::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
         }
         .chat-bubble {
             max-width: 80%;
@@ -54,24 +70,72 @@
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1.0); }
         }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .btn-gradient-execute {
+            background: linear-gradient(270deg, #3b82f6, #10b981, #3b82f6);
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite;
+        }
+        .footer-gradient {
+            background: linear-gradient(270deg, #0ea5e9, #6366f1, #10b981, #0ea5e9);
+            background-size: 300% 300%;
+            animation: gradientMove 4s ease infinite;
+        }
+        /* Hide default details marker for modern accordions */
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-blue-100 antialiased">
-    <div id="app" class="flex flex-col h-screen">
+    <div id="app" class="flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- Toggle Bars Button -->
+        <button id="toggle-bars-btn" class="absolute top-2.5 right-3 sm:right-5 z-50 text-white bg-black/10 hover:bg-black/20 rounded-lg p-1.5 transition-all duration-300" title="Toggle Fullscreen View">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+        </button>
+
         <!-- Header -->
-        <header class="bg-gradient-to-r from-sky-500 to-indigo-500 text-white text-center py-4 shadow-md w-full">
-            <h1 class="text-xl md:text-2xl font-bold">Developed by Dr. Mazen Badawy – Doctorate of English Teaching & Testing</h1>
+        <header id="main-header" class="bg-gradient-to-r from-sky-500 to-indigo-500 text-white px-4 py-3 shadow-md w-full flex items-center justify-center relative z-20">
+            <h1 class="text-xl md:text-2xl font-bold text-center flex-none">Technical Writing Tutor</h1>
         </header>
 
-        <!-- Main Chat Area -->
-        <main class="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-            <div class="w-full max-w-4xl h-full flex flex-col bg-white rounded-2xl shadow-xl border border-gray-200">
+        <!-- Tab Navigation -->
+        <div class="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 p-3 flex justify-center space-x-2 sm:space-x-4 z-10 overflow-x-auto whitespace-nowrap">
+            <button class="tab-btn active-tab px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm shadow-md transition-all duration-300 flex items-center transform scale-105 bg-sky-500 text-white" data-target="tab-assistant">
+                💬 <span class="ml-2 hidden sm:inline">Assistant</span>
+            </button>
+            <button class="tab-btn inactive-tab px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-target="tab-evaluation">
+                📊 <span class="ml-2 hidden sm:inline">Evaluation Tool</span>
+            </button>
+            <button class="tab-btn inactive-tab px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-target="tab-tutorial">
+                📚 <span class="ml-2 hidden sm:inline">Tutorial</span>
+            </button>
+            <button class="tab-btn inactive-tab px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-target="tab-grammar">
+                ✍️ <span class="ml-2 hidden sm:inline">Grammar</span>
+            </button>
+            <button class="tab-btn inactive-tab px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center bg-slate-100 text-slate-600 hover:bg-slate-200" data-target="tab-rubric">
+                📖 <span class="ml-2 hidden sm:inline">Rubric & Guide</span>
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-hidden p-4 relative">
+            
+            <!-- TAB 1: Assistant -->
+            <div id="tab-assistant" class="tab-content w-full max-w-5xl mx-auto h-full flex flex-col bg-white rounded-2xl shadow-xl border border-gray-200 transition-opacity duration-300">
                 <!-- Chat Window -->
                 <div id="chat-window" class="flex-1 p-6 space-y-4 overflow-y-auto">
                     <!-- Initial Bot Message -->
                     <div class="chat-bubble bot-bubble p-4 rounded-lg rounded-bl-none">
                         <p class="font-bold text-sky-700">Technical Writing Tutor</p>
-                        <p class="text-gray-700">Welcome! I'm here to help you improve your technical writing skills based on your course guidelines. Ask me anything about writing reports, proposals, using citations, or visualizing data. You can also click one of the topics below to get started.</p>
+                        <p class="text-gray-700">Welcome! I'm here to help you improve your technical writing skills based on your course guidelines. Ask me anything about writing reports, proposals, using citations, or visualizing data.</p>
                     </div>
                 </div>
 
@@ -79,102 +143,1578 @@
                 <div id="suggestions" class="px-6 pt-4 border-t border-gray-200">
                     <p class="text-sm font-semibold text-gray-600 mb-2">Suggested Topics:</p>
                     <div class="flex flex-wrap gap-2">
-                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-medium py-2 px-4 rounded-full transition-colors duration-200">How do I write a clear abstract for an engineering report?</button>
-                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-medium py-2 px-4 rounded-full transition-colors duration-200">Explain the IEEE citation style with examples.</button>
-                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-medium py-2 px-4 rounded-full transition-colors duration-200">What are the key elements of a user manual?</button>
-                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-medium py-2 px-4 rounded-full transition-colors duration-200">Tips for avoiding jargon when writing for a non-technical audience.</button>
+                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-bold py-2 px-4 rounded-full transition-colors duration-200">How do I write a clear abstract for an engineering report?</button>
+                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-bold py-2 px-4 rounded-full transition-colors duration-200">Explain the IEEE citation style with examples.</button>
+                        <button class="suggestion-btn bg-sky-100 text-sky-800 hover:bg-sky-200 text-sm font-bold py-2 px-4 rounded-full transition-colors duration-200">Tips for avoiding jargon when writing for a non-technical audience.</button>
                     </div>
                 </div>
-                
+
                 <!-- Input Area -->
                 <div class="p-4 sm:p-6 bg-slate-50 border-t border-gray-200 rounded-b-2xl">
-                    <form id="chat-form" class="flex items-center space-x-4">
-                        <input id="user-input" type="text" placeholder="Type your question here..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none transition-shadow duration-200" autocomplete="off">
-                        <button id="send-btn" type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                            <span class="ml-2 hidden sm:inline">Send</span>
+                    <form id="assistant-form" class="flex items-end space-x-2">
+                        <textarea id="assistant-input" rows="2" placeholder="Type your technical writing question here..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none transition-shadow duration-200 font-bold resize-y min-h-[52px] max-h-[30vh]"></textarea>
+                        <button id="assistant-send-btn" type="submit" class="btn-gradient-execute text-white font-bold h-[52px] px-6 rounded-lg shadow-md hover:scale-105 transition-transform duration-300 flex items-center justify-center flex-shrink-0">
+                            🚀 <span class="ml-2 hidden sm:inline">Ask</span>
                         </button>
                     </form>
                 </div>
             </div>
+
+            <!-- TAB 2: Evaluation Tool -->
+            <div id="tab-evaluation" class="tab-content hidden w-full max-w-7xl mx-auto h-full flex flex-col lg:flex-row bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-opacity duration-300">
+                
+                <!-- Left Panel: Input & Controls -->
+                <div class="w-full lg:w-2/5 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 bg-slate-50 p-6 h-1/2 lg:h-full overflow-y-auto">
+                    <h2 class="text-xl font-bold text-sky-800 mb-4 flex items-center"><span class="text-2xl mr-2">📊</span> Report Evaluator</h2>
+                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Select a section, upload your document (or paste text), and run the evaluation to generate a comprehensive rubric breakdown.</p>
+                    
+                    <form id="eval-form" class="flex flex-col flex-1 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Target Section</label>
+                            <select id="eval-section" class="w-full p-3 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 bg-white focus:ring-2 focus:ring-sky-500 outline-none cursor-pointer shadow-sm">
+                                <option value="Let AI Decide">Let AI Decide (Auto-detect section)</option>
+                                <option value="Abstract">Abstract</option>
+                                <option value="Introduction">Introduction</option>
+                                <option value="Literature Review">Literature Review</option>
+                                <option value="Methodology">Methodology</option>
+                                <option value="Implementation">Implementation</option>
+                                <option value="Results and Analysis">Results and Analysis</option>
+                                <option value="Conclusion and Future Work">Conclusion and Future Work</option>
+                                <option value="References and Formatting">References and Formatting</option>
+                                <option value="Full Report">Full Report</option>
+                            </select>
+                        </div>
+
+                        <div class="flex-1 flex flex-col relative">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Document Text</label>
+                            <textarea id="eval-input" placeholder="Paste your report text here, or use the upload button..." class="flex-1 w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none transition-shadow duration-200 font-medium resize-none shadow-inner bg-white text-sm"></textarea>
+                            
+                            <input type="file" id="eval-file" accept=".pdf,.docx,.txt" class="hidden">
+                            <button type="button" id="eval-upload-btn" class="absolute bottom-4 right-4 bg-white border border-gray-200 text-sky-600 hover:text-sky-800 hover:bg-sky-50 p-3 rounded-full shadow-md transition-all duration-200 flex items-center justify-center group" title="Upload DOCX, PDF, or TXT">
+                                <span class="text-xl group-hover:scale-110 transition-transform">📁</span>
+                            </button>
+                        </div>
+
+                        <button id="eval-send-btn" type="submit" class="w-full btn-gradient-execute text-white font-bold py-4 px-6 rounded-lg shadow-lg hover:scale-[1.02] transition-transform duration-300 flex items-center justify-center text-lg mt-4">
+                            ✨ Run Evaluation
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right Panel: Results -->
+                <div class="w-full lg:w-3/5 p-6 h-1/2 lg:h-full overflow-y-auto bg-white relative" id="eval-results-container">
+                    <!-- Empty State -->
+                    <div id="eval-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-slate-50/50">
+                        <span class="text-6xl mb-4 opacity-50 grayscale">📝</span>
+                        <h3 class="text-xl font-bold text-slate-400 mb-2">Ready for Assessment</h3>
+                        <p class="text-sm text-slate-400 max-w-sm">Submit your text using the panel on the left to view your interactive grading widget and detailed enhancement feedback here.</p>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="eval-loading-state" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-white z-10 backdrop-blur-sm">
+                        <div class="typing-indicator bg-sky-100 rounded-full mb-4 border border-sky-200 shadow-sm">
+                            <span class="bg-sky-500"></span><span class="bg-sky-500"></span><span class="bg-sky-500"></span>
+                        </div>
+                        <h3 class="text-lg font-bold text-sky-700 animate-pulse">Analyzing Document...</h3>
+                        <p class="text-xs text-sky-600/70 mt-2">Checking against engineering rubrics</p>
+                    </div>
+
+                    <!-- Results Output -->
+                    <div id="eval-output" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Tutorial (NEW) -->
+            <div id="tab-tutorial" class="tab-content hidden w-full max-w-6xl mx-auto h-full bg-slate-50 rounded-2xl shadow-xl border border-gray-200 overflow-y-auto p-6 transition-opacity duration-300">
+                <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-300">
+                    <div>
+                        <h2 class="text-2xl font-bold text-sky-800 flex items-center"><span class="text-3xl mr-3">📚</span> Tutorial: Engineering Report Sub-Elements</h2>
+                        <p class="text-gray-600 mt-2 text-sm font-medium">How to write each sub-element based on the HIET Template.</p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-100/50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-8 shadow-sm">
+                    <p class="text-blue-900 text-sm font-semibold">💡 This guide explains, in short passages, what each sub‑element (subsection) contains and how to write it. Click the categories below to expand and explore the responsive interactive boxes.</p>
+                </div>
+
+                <div class="space-y-4 pb-12">
+                    
+                    <!-- 1. Front Matter -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" open>
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📑</span> Front Matter</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-6 bg-slate-50/50">
+                            
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Title Page</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write your project title in full capitals, centred. Below it, write your name. Then add “Under the supervision of:” followed by your supervisor’s title and name. At the bottom, state your institution and the month and year of submission.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Declaration</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write one paragraph: “I declare that this report entitled ‘[your title]’ is the result of my own research except as cited in the references.” Then state that the thesis has not been submitted for any other degree. Sign and date.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Dedication</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write one short sentence dedicating your work to someone (e.g., “To my beloved mother and father”). Keep it personal and brief.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Acknowledgement</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Thank God or Allah first. Then thank your supervisor by name. Then thank your parents and family. Use full, respectful sentences. Keep it to one paragraph.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Abstract (English)</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Summarise your whole report in 150–250 words. Write one sentence on the problem, one on what you did, one on your method, one or two on main results, and one on the conclusion. Use past tense for your work, present tense for facts.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Arabic Abstract</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write after the English abstract. Use formal Modern Standard Arabic. Align text to the right. Do not translate literally – adapt the meaning naturally.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">Table of Contents</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Generate automatically using your word processor. List all chapters, sections, subsections, and page numbers. Update after any editing.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">List of Tables & Figures</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">List each table/figure number, its caption, and the page number. Use dots (leaders) to connect. Match captions exactly.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">List of Appendices</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">List each appendix letter (A, B, C…), its title, and the page number.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 2. Chapter 1 -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📘</span> Chapter 1: Introduction</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-6 bg-slate-50/50">
+                            
+                            <!-- Visual Illustration: Thesis Flow -->
+                            <div class="md:col-span-2 lg:col-span-3 bg-white border border-sky-200 rounded-xl p-6 shadow-sm flex flex-col items-center">
+                                <h4 class="font-bold text-sky-800 text-lg mb-4">Standard Engineering Report Flow</h4>
+                                <svg viewBox="0 0 800 100" class="w-full max-w-4xl font-sans drop-shadow-sm">
+                                    <defs>
+                                        <marker id="arrowRight" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                            <path d="M0,0 L0,6 L9,3 z" fill="#0284c7" />
+                                        </marker>
+                                    </defs>
+                                    
+                                    <!-- Boxes -->
+                                    <rect x="10" y="30" width="110" height="40" rx="6" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="65" y="55" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="14" alignment-baseline="middle">1. Intro</text>
+                                    <path d="M 120 50 L 140 50" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+
+                                    <rect x="150" y="30" width="110" height="40" rx="6" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="205" y="55" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="14" alignment-baseline="middle">2. Lit Review</text>
+                                    <path d="M 260 50 L 280 50" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+
+                                    <rect x="290" y="30" width="110" height="40" rx="6" fill="#7dd3fc" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="345" y="55" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="14" alignment-baseline="middle">3. Method</text>
+                                    <path d="M 400 50 L 420 50" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+
+                                    <rect x="430" y="30" width="110" height="40" rx="6" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="485" y="55" text-anchor="middle" fill="#0c4a6e" font-weight="bold" font-size="14" alignment-baseline="middle">4. Framework</text>
+                                    <path d="M 540 50 L 560 50" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+
+                                    <rect x="570" y="30" width="110" height="40" rx="6" fill="#0ea5e9" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="625" y="55" text-anchor="middle" fill="#ffffff" font-weight="bold" font-size="14" alignment-baseline="middle">5. Results</text>
+                                    <path d="M 680 50 L 700 50" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+
+                                    <rect x="710" y="30" width="80" height="40" rx="6" fill="#0284c7" stroke="#0369a1" stroke-width="2"/>
+                                    <text x="750" y="55" text-anchor="middle" fill="#ffffff" font-weight="bold" font-size="14" alignment-baseline="middle">6. Concl.</text>
+                                </svg>
+                            </div>
+
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.1 Preamble</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Give broad background. Explain why the topic matters today. Write two or three sentences in present tense. Do not use many citations here.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.2 Background & Motivation</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Give more specific background. Explain what previous researchers found. Then state why you were motivated to do this study. You may list motivation points as bullets.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.3 Statement of the Problem</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write one clear sentence that identifies the gap or issue. Start with “The problem that this study tackles is:” then state the problem. No solutions here.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.4 Aim of the Study</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write one sentence beginning “The aim of this study is to…”. State your main goal broadly.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.5 Objectives of the Study</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">List numbered objectives. Each starts with “To” (e.g., “To identify the current state of the art”). Make each objective specific and measurable.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.6 Scope of the Study</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Explain what you will include and, more importantly, what you will exclude. Mention limitations like time, resources, or technology versions.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.7 Significance of the Study</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">State who will benefit (consumers, developers, evaluators). Explain how your work improves existing knowledge. Keep to three to five sentences.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">1.8 Organisation of the Thesis</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Give a roadmap. Write one sentence per chapter saying what it contains. End with a figure of the thesis skeleton if needed.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 3. Chapter 2 -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📘</span> Chapter 2: Literature Review</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 p-6 bg-slate-50/50">
+                            
+                            <!-- Visual Illustration: The Funnel Approach -->
+                            <div class="md:col-span-3 bg-white border border-sky-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row items-center gap-6">
+                                <div class="flex-1 text-sm text-slate-600 leading-relaxed">
+                                    <h4 class="font-bold text-sky-800 text-lg mb-3">The "Funnel" Approach</h4>
+                                    <p class="mb-2">A strong literature review moves from a broad overview down to your specific research gap, much like a funnel.</p>
+                                    <ul class="list-disc ml-5 space-y-2">
+                                        <li><strong>Top:</strong> Introduce the general field and explain its importance.</li>
+                                        <li><strong>Middle:</strong> Discuss recent, relevant studies directly related to your theme. What has been solved?</li>
+                                        <li><strong>Bottom:</strong> Highlight the limitations of existing solutions to clearly identify the <em>Gap</em> your project fills.</li>
+                                    </ul>
+                                </div>
+                                <div class="flex-1 flex justify-center w-full">
+                                    <svg viewBox="0 0 300 240" class="w-full max-w-[280px] drop-shadow-md font-sans">
+                                        <!-- Broad Level -->
+                                        <polygon points="10,10 290,10 240,80 60,80" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+                                        <text x="150" y="45" text-anchor="middle" fill="#0369a1" font-bold="true" font-size="14" font-weight="bold">General Context / Background</text>
+                                        
+                                        <!-- Specific Level -->
+                                        <polygon points="60,90 240,90 190,160 110,160" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+                                        <text x="150" y="130" text-anchor="middle" fill="#0369a1" font-size="13" font-weight="bold">Specific Prior Studies</text>
+                                        
+                                        <!-- The Gap -->
+                                        <polygon points="110,170 190,170 160,230 140,230" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>
+                                        <text x="150" y="200" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">The GAP</text>
+                                        <text x="150" y="215" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold">(Your focus)</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">2.1 Introduction</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Tell the reader what this chapter covers. List the main topics in order. Do not present original research.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">2.2 Thematic Sections</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Use subheadings for each theme. First define key terms. Then summarise what several researchers found. Then identify a gap. Use citations. End with a sentence that leads to the next theme.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">2.x Summary</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Briefly restate the main findings from the literature. Clearly state the gap your research will fill. List the features an enhanced framework should have.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 4. Chapter 3 -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📘</span> Chapter 3: Research Methodology</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-6 bg-slate-50/50">
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">3.1 Introduction</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Explain the purpose of this chapter. State that you will describe research phases, modelling, and tools. Keep it short.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">3.2 Research Development Phases</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Break your work into phases (e.g., 3.2.1 TPM Testing Framework). For each phase, describe what you did, why, and the output. Use past tense. Include a research framework figure.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">3.3 Research Environment</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">List all software, hardware, and tools with versions and purposes. Include computer specifications (CPU, RAM, OS).</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">3.4 Summary</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Summarise the methodology. Remind the reader of the main phases and tools. Transition to the next chapter.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 5. Chapter 4 -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📘</span> Chapter 4: Proposed Framework</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-6 bg-slate-50/50">
+                            
+                            <!-- Visual Illustration: System Architecture -->
+                            <div class="md:col-span-2 bg-white border border-sky-200 rounded-xl p-6 shadow-sm flex flex-col items-center">
+                                <h4 class="font-bold text-sky-800 text-lg mb-4">Example: High-Level System Architecture Block Diagram</h4>
+                                <p class="text-sm text-slate-600 mb-6 max-w-2xl text-center">Use simple, clearly labeled block diagrams to explain your framework. Show the flow of data from input to processing to output.</p>
+                                <svg viewBox="0 0 600 200" class="w-full max-w-2xl font-sans drop-shadow-sm">
+                                    <!-- Background bounding box indicating "The Proposed System" -->
+                                    <rect x="180" y="20" width="240" height="160" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,5"/>
+                                    <text x="300" y="45" text-anchor="middle" fill="#64748b" font-weight="bold" font-size="12">Proposed System / Framework</text>
+                                    
+                                    <!-- Inputs -->
+                                    <rect x="20" y="75" width="110" height="50" rx="6" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="75" y="105" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="13" alignment-baseline="middle">Input Data</text>
+                                    <path d="M 130 100 L 190 100" stroke="#0284c7" stroke-width="3" marker-end="url(#arrowRight)"/>
+
+                                    <!-- Process Blocks inside System -->
+                                    <rect x="200" y="60" width="90" height="40" rx="4" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="245" y="85" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="11" alignment-baseline="middle">Module A</text>
+                                    
+                                    <path d="M 290 80 L 310 80" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+                                    
+                                    <rect x="310" y="60" width="90" height="80" rx="4" fill="#7dd3fc" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="355" y="95" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="11" alignment-baseline="middle">Core</text>
+                                    <text x="355" y="110" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="11" alignment-baseline="middle">Algorithm</text>
+                                    
+                                    <path d="M 245 100 L 245 120" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+                                    
+                                    <rect x="200" y="120" width="90" height="40" rx="4" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="245" y="145" text-anchor="middle" fill="#0369a1" font-weight="bold" font-size="11" alignment-baseline="middle">Database</text>
+                                    <path d="M 290 140 L 310 140" stroke="#0284c7" stroke-width="2" marker-end="url(#arrowRight)"/>
+
+                                    <!-- Output -->
+                                    <path d="M 400 100 L 460 100" stroke="#0284c7" stroke-width="3" marker-end="url(#arrowRight)"/>
+                                    <rect x="470" y="75" width="110" height="50" rx="6" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>
+                                    <text x="525" y="105" text-anchor="middle" fill="#0c4a6e" font-weight="bold" font-size="13" alignment-baseline="middle">Final Output</text>
+                                </svg>
+                            </div>
+
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">4.1 Introduction</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Introduce your framework. State its name (e.g., TPM-TF). Explain what it does and why it is better. Keep to one or two paragraphs.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">4.2 Framework Description</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Use a block diagram figure. Then explain each component in text. If there are levels (simulation, concrete-TPM), describe each in a separate subsection. Use present tense.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">4.3 Comparison with Existing</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Present a comparison table. Choose relevant features (on‑line testing, randomness, security testing). Highlight your advantages. Be fair.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">4.4 Summary</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Summarise the main components and advantages. State that the next chapter implements one level.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 6. Chapter 5 & 6 -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📘</span> Chapter 5 & 6: Modelling and Verification</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-6 bg-slate-50/50">
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">5.1 Introduction</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">State which part of your framework this chapter implements. Name the modelling formalism (LTS, CPN, etc.). Give an overview of the models.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">5.2 Modelling Preparation</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Describe what you did before building models: studying specifications, constructing transition tables, defining colour sets. List assumptions.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">5.3 Model Description</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Show the model as a figure (partial view if large). Explain states, transitions, places, or tokens. Refer to the figure in your text.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">5.4 Verification / Testing</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Explain how you verified correctness (mutation analysis, state space exploration, simulation). Present results in tables (mutation scores, state space sizes). Discuss problems and solutions.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">5.5 Summary</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Summarise what you modelled and the verification results. State that the model is ready for use.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 7. Chapter 7 -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📘</span> Chapter 7: Discussion, Conclusion, Recommendations</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-6 bg-slate-50/50">
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">7.1 Introduction</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">State the purpose of this final chapter. Tell the reader you will discuss findings, list contributions, suggest future work, and conclude. Keep to two or three sentences.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">7.2 Research Contributions</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">List contributions (use a table with columns: number, contribution, section, type). Then write a paragraph explaining each major contribution. Start with “This study contributes to the field by…”.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">7.3 Future Work</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Suggest what other researchers can do next. Mention limitations to address. Start each suggestion with “Future research should…” or “It would be interesting to…”.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">7.4 Conclusion</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Write a final paragraph summarising the entire thesis: problem, method, main results, significance. No new information. End with a strong closing sentence.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 8. End Matter & Tips -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">📚</span> End Matter & Tips</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 p-6 bg-slate-50/50">
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">References</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">List all cited sources. Use a consistent style (author‑date or numbered). Arrange alphabetically by first author’s last name. Check that every in‑text citation appears in the list.</p>
+                            </div>
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">Appendices</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">Label each appendix with a letter and title (e.g., “APPENDIX A: Command Matrices”). Put detailed material here (full tables, code, large data). Refer to each appendix in the main text. Do not put essential results only in appendices.</p>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-green-400 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-green-700 text-md mb-2">💡 Final Tip</h4>
+                                <p class="text-sm text-green-800 leading-relaxed">For each sub‑element, write one or two short paragraphs. Use clear headings. Follow the order shown above. This structure will satisfy most engineering report requirements.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                </div>
+            </div>
+
+            <!-- TAB 4: Rubric & Explanation -->
+            <div id="tab-rubric" class="tab-content hidden w-full max-w-5xl mx-auto h-full bg-white rounded-2xl shadow-xl border border-gray-200 overflow-y-auto p-6 transition-opacity duration-300">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-sky-800 flex items-center"><span class="text-3xl mr-3">📖</span> Rubric Explanation & Guide</h2>
+                </div>
+                
+                <div class="space-y-8 text-gray-700 leading-relaxed">
+                    <!-- Intro -->
+                    <div class="bg-blue-50 p-5 rounded-xl border border-blue-200">
+                        <h3 class="font-bold text-lg text-blue-900 mb-2">How this Assessment Works</h3>
+                        <p class="text-sm">The assessment rubric evaluates technical writing submissions with a focus on engineering standards. The system categorizes work into six major areas, assigning a score from 1 (Inadequate) to 4 (Excellent) for each sub-criterion. A maximum raw score is 84, translating to a final percentage and letter grade.</p>
+                        
+                        <div class="mt-4 bg-white p-4 rounded-lg border border-blue-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-bold text-blue-800 text-sm mb-2">Scoring Breakdown</h4>
+                                <ul class="text-sm space-y-1 ml-4 list-disc text-blue-900/80">
+                                    <li><strong class="text-green-700">76–84 (A / 90-100%):</strong> Excellent</li>
+                                    <li><strong class="text-blue-700">63–75 (B / 75-89%):</strong> Proficient</li>
+                                    <li><strong class="text-yellow-700">51–62 (C / 60-74%):</strong> Developing</li>
+                                    <li><strong class="text-orange-600">42–50 (D / 50-59%):</strong> Below acceptable</li>
+                                    <li><strong class="text-red-700">0–41 (F / &lt;50%):</strong> Inadequate</li>
+                                </ul>
+                            </div>
+                            <div class="text-sm text-blue-900/80">
+                                <h4 class="font-bold text-blue-800 text-sm mb-2">Category Weights</h4>
+                                <p><strong>15%</strong> - Structure and Organization</p>
+                                <p><strong>20%</strong> - Content Quality and Technical Depth</p>
+                                <p><strong>20%</strong> - Technical Accuracy and Rigor</p>
+                                <p><strong>15%</strong> - Clarity and Readability</p>
+                                <p><strong>15%</strong> - Figures, Tables, and References</p>
+                                <p><strong>15%</strong> - Engineering Report Conventions</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 pt-4">
+                        <h2 class="text-2xl font-bold text-sky-800 flex items-center"><span class="text-3xl mr-3">📋</span> Complete Technical Writing Rubric</h2>
+                    </div>
+
+                    <!-- Tables Container -->
+                    <div class="space-y-8 text-sm text-gray-700">
+                        <!-- Rubric Table I -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b border-slate-200">
+                                <h3 class="font-bold text-lg text-sky-700 m-0">I. Structure and Organization (15%)</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-gray-700">
+                                        <tr>
+                                            <th class="border-b border-r border-gray-200 p-3 w-1/5">Criterion</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="border-b border-gray-200 p-3 text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Adherence to Template</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Follows all required sections exactly</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Missing 1 minor section</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Missing 2–3 sections</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No clear structure</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Logical Flow</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Ideas progress clearly; smooth transitions</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Minor gaps but overall logical</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Several jumps in logic</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No coherent progression</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Formatting Compliance</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Consistent with IEEE standards</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">1–2 minor errors</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">3–5 formatting errors</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Major formatting violations</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Rubric Table II -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b border-slate-200">
+                                <h3 class="font-bold text-lg text-sky-700 m-0">II. Content Quality and Technical Depth (20%)</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-gray-700">
+                                        <tr>
+                                            <th class="border-b border-r border-gray-200 p-3 w-1/5">Criterion</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="border-b border-gray-200 p-3 text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Problem Statement & Obj.</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Clear, specific, measurable</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Present but not fully measurable</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Vague problem / incomplete</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No clear problem stated</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Literature Review</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Comprehensive synthesis; min 50 citations</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Good coverage; lacks critical eval</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Descriptive only; few citations</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Very limited / irrelevant</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Methodology</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Detailed, reproducible; tools explained</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Described; minor steps missing</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">High-level only; reproducibility unlikely</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No methodology</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Implementation</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Complete, detailed description; specs and code documented</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Described but missing some details</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">High-level overview only</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No implementation description</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Results and Analysis</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Clear IEEE tables/figures; thorough analysis</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Clear results; shallow analysis</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Results without meaningful analysis</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Results missing/irrelevant</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Conclusion & Future Work</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Summarizes findings, proposes feasible work</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Present but future work vague</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Weak conclusion / no future work</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Conclusion missing entirely</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Rubric Table III -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b border-slate-200">
+                                <h3 class="font-bold text-lg text-sky-700 m-0">III. Technical Accuracy and Rigor (20%)</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-gray-700">
+                                        <tr>
+                                            <th class="border-b border-r border-gray-200 p-3 w-1/5">Criterion</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="border-b border-gray-200 p-3 text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Technical Terminology</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Defined at first use and used correctly</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Most correct; minor misuse</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Frequent misuse / undefined</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Consistently incorrect</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Formal Notation & Math</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">All equations correct, numbered (IEEE)</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Minor errors / missing explanations</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Several errors / unclear</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No formal notation</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Evidence and Support</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">All claims supported by data/citations</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Most claims supported</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Some unsupported/anecdotal</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Purely opinion-based</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Rubric Table IV -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b border-slate-200">
+                                <h3 class="font-bold text-lg text-sky-700 m-0">IV. Clarity and Readability (15%)</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-gray-700">
+                                        <tr>
+                                            <th class="border-b border-r border-gray-200 p-3 w-1/5">Criterion</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="border-b border-gray-200 p-3 text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Language and Grammar</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">No errors; professional, objective tone</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">1–3 minor errors</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">4–6 errors; awkward phrasing</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">>6 errors; unreadable/informal</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Sentence & Paragraph Structure</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Varied structure; focused paragraphs</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Mostly good; occasional run-ons</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Many weak/fragmented sentences</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Lack clear structure</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Acronym Management</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">All defined at first occurrence</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">One or two undefined initially</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Several undefined</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Most undefined/inconsistent</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Rubric Table V -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b border-slate-200">
+                                <h3 class="font-bold text-lg text-sky-700 m-0">V. Figures, Tables, and References (15%)</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-gray-700">
+                                        <tr>
+                                            <th class="border-b border-r border-gray-200 p-3 w-1/5">Criterion</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="border-b border-gray-200 p-3 text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Figures and Tables</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Numbered (IEEE), captioned, referenced</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Minor issues (e.g., missing ref)</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Poor quality/numbering</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No figures/tables where needed</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Citations</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">All correct IEEE format, chronological</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">1-2 format errors</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Several errors/inconsistent</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No citations/plagiarism</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Reference List</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Complete, consistent IEEE format</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Minor formatting inconsistencies</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Missing/incomplete entries</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No list/noncompliant</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Rubric Table VI -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-4 border-b border-slate-200">
+                                <h3 class="font-bold text-lg text-sky-700 m-0">VI. Engineering Report Conventions (15%)</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-gray-700">
+                                        <tr>
+                                            <th class="border-b border-r border-gray-200 p-3 w-1/5">Criterion</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="border-b border-r border-gray-200 p-3 text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="border-b border-gray-200 p-3 text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Front Matter</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">All required present & formatted correctly</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">One component missing/flawed</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Two components flawed</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Incomplete or absent</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Appendices</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Present, fully referenced, labeled</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Present but not fully referenced</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Incomplete/poorly organized</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">No appendices when required</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="border-b border-r border-gray-200 p-3 font-bold bg-slate-50">Lists (TOC, LOF, LOT)</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">All present, accurate page numbers (IEEE)</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Minor errors in numbering/format</td>
+                                            <td class="border-b border-r border-gray-200 p-3 text-center">Several errors; incomplete</td>
+                                            <td class="border-b border-gray-200 p-3 text-center">Missing required lists</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: Grammar Tutorial (NEW) -->
+            <div id="tab-grammar" class="tab-content hidden w-full max-w-6xl mx-auto h-full bg-slate-50 rounded-2xl shadow-xl border border-gray-200 overflow-y-auto p-6 transition-opacity duration-300">
+                <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-300">
+                    <div>
+                        <h2 class="text-2xl font-bold text-sky-800 flex items-center"><span class="text-3xl mr-3">✍️</span> Grammar Support for EFL Engineering Students</h2>
+                        <p class="text-gray-600 mt-2 text-sm font-medium">Bridge the gap between general English grammar and objective academic technical reporting.</p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-100/50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-8 shadow-sm">
+                    <p class="text-blue-900 text-sm font-semibold">💡 This tutorial moves from definition to application, providing multiple EE-specific examples drawn directly from lab reports, datasheets, troubleshooting guides, and research papers.</p>
+                </div>
+
+                <div class="space-y-4 pb-12">
+                    
+                    <!-- Module 1: Foundations -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" open>
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">🧱</span> Module 1: Foundations of Technical English</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-6 bg-slate-50/50">
+                            
+                            <!-- Concept 1 -->
+                            <div class="md:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2 flex items-center">1. Introduction & Basic Concepts</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed mb-3"><strong>Concept:</strong> The transition from general English to technical English requires eliminating ambiguity and subjective language to achieve clarity, precision, and objectivity.</p>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse text-sm">
+                                        <thead class="bg-slate-100 text-slate-700">
+                                            <tr><th class="p-2 border border-slate-200 w-1/2">General / Informal English</th><th class="p-2 border border-slate-200 w-1/2">Technical / Academic English</th></tr>
+                                        </thead>
+                                        <tbody class="text-slate-600">
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r border-slate-200 bg-red-50">"The motor got really hot."</td><td class="p-2 bg-green-50">"The motor's operating temperature exceeded the recommended threshold of 85°C."</td></tr>
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r border-slate-200 bg-red-50">"The circuit didn't work properly."</td><td class="p-2 bg-green-50">"The circuit exhibited intermittent signal degradation at frequencies above 2 kHz."</td></tr>
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r border-slate-200 bg-red-50">"We used a pretty big capacitor."</td><td class="p-2 bg-green-50">"A 470 µF electrolytic capacitor was selected for the smoothing stage."</td></tr>
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r border-slate-200 bg-red-50">"The voltage went up and down."</td><td class="p-2 bg-green-50">"The output voltage fluctuated between 4.8 V and 5.2 V over a 10 ms period."</td></tr>
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r border-slate-200 bg-red-50">"This result seems important."</td><td class="p-2 bg-green-50">"This finding is statistically significant (p < 0.05) and suggests a linear correlation."</td></tr>
+                                            <tr><td class="p-2 border-r border-slate-200 bg-red-50">"They did the experiment again."</td><td class="p-2 bg-green-50">"The experimental procedure was replicated three times to ensure repeatability."</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Concept 2: Nouns & Verbs -->
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">2a. Parts of Speech: Nouns & Verbs</h4>
+                                <div class="space-y-4 text-sm text-slate-600">
+                                    <div>
+                                        <p class="font-bold text-slate-800 border-b border-slate-100 pb-1 mb-1">Nouns (Things & Concepts)</p>
+                                        <ul class="list-disc ml-4 space-y-1 mb-2">
+                                            <li><strong>Components:</strong> resistor, capacitor, microcontroller, rectifier</li>
+                                            <li><strong>Measurements:</strong> voltage (V), current (I), impedance (Z)</li>
+                                            <li><strong>Abstract:</strong> conductivity, permeability, attenuation</li>
+                                        </ul>
+                                        <p class="bg-slate-50 p-2 rounded text-xs italic">"The <strong>oscillator</strong> generates a stable <strong>frequency</strong> of 10 MHz, but the <strong>capacitance</strong> of the <strong>transistor</strong> affects the <strong>signal</strong>."</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-800 border-b border-slate-100 pb-1 mb-1">Verbs (Actions or States)</p>
+                                        <ul class="list-disc ml-4 space-y-1 mb-2">
+                                            <li><strong>Action:</strong> connect, solder, measure, amplify, modulate</li>
+                                            <li><strong>State:</strong> consists of, represents, indicates, depends on</li>
+                                            <li><strong>Passive:</strong> is connected, was measured, has been observed</li>
+                                        </ul>
+                                        <p class="bg-slate-50 p-2 rounded text-xs italic">"When the technician <strong>connected</strong> the oscilloscope, it <strong>revealed</strong> harmonic distortion that the simulation <strong>had not predicted</strong>."</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Concept 2: Adjectives & Adverbs -->
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">2b. Parts of Speech: Adjectives & Adverbs</h4>
+                                <div class="space-y-4 text-sm text-slate-600">
+                                    <div>
+                                        <p class="font-bold text-slate-800 border-b border-slate-100 pb-1 mb-1">Adjectives (Modifiers of Nouns)</p>
+                                        <ul class="list-disc ml-4 space-y-1 mb-2">
+                                            <li><strong>Descriptive:</strong> resistive, capacitive, linear, asynchronous</li>
+                                            <li><strong>Comparative:</strong> higher voltage, less stable oscillation</li>
+                                            <li><strong>States:</strong> short-circuited, reverse-biased, discharged</li>
+                                        </ul>
+                                        <p class="bg-slate-50 p-2 rounded text-xs italic">"The <strong>high-frequency</strong> signal passed through the <strong>low-pass</strong> filter, but <strong>residual</strong> noise remained in the <strong>output</strong> waveform."</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-800 border-b border-slate-100 pb-1 mb-1">Adverbs (Modifiers of Verbs/Adjs)</p>
+                                        <ul class="list-disc ml-4 space-y-1 mb-2">
+                                            <li><strong>Manner:</strong> precisely, accurately, intermittently, logarithmically</li>
+                                            <li><strong>Time:</strong> initially, subsequently, concurrently</li>
+                                            <li><strong>Degree:</strong> significantly, marginally, approximately</li>
+                                        </ul>
+                                        <p class="bg-slate-50 p-2 rounded text-xs italic">"The voltage <strong>initially</strong> dropped sharply, then <strong>gradually</strong> stabilized, and <strong>finally</strong> remained <strong>perfectly</strong> constant."</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Concept 3: Word Formation (Prefixes) -->
+                            <div class="md:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">3. Word Formation (Prefixes & Suffixes)</h4>
+                                <p class="text-sm text-slate-600 mb-3">Understanding morphology to decode and create complex engineering terms.</p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="overflow-x-auto">
+                                        <h5 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">Common EE Prefixes</h5>
+                                        <table class="w-full text-left border-collapse text-xs">
+                                            <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border border-slate-200">Prefix</th><th class="p-2 border border-slate-200">Meaning</th><th class="p-2 border border-slate-200">Examples</th></tr></thead>
+                                            <tbody class="text-slate-600">
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">micro- / nano-</td><td class="p-2 border-r">millionth / billionth</td><td class="p-2">microcontroller, nanosecond</td></tr>
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">kilo- / mega-</td><td class="p-2 border-r">thousand / million</td><td class="p-2">kilohertz (kHz), megawatt (MW)</td></tr>
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">semi- / poly-</td><td class="p-2 border-r">half / many</td><td class="p-2">semiconductor, polyphase</td></tr>
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">uni- / bi- / multi-</td><td class="p-2 border-r">one / two / many</td><td class="p-2">unidirectional, bipolar, multimeter</td></tr>
+                                                <tr><td class="p-2 border-r font-bold">inter-</td><td class="p-2 border-r">between</td><td class="p-2">interference, interconnect</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <h5 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">Common EE Suffixes & Composites</h5>
+                                        <table class="w-full text-left border-collapse text-xs">
+                                            <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border border-slate-200">Suffix</th><th class="p-2 border border-slate-200">Meaning</th><th class="p-2 border border-slate-200">Examples</th></tr></thead>
+                                            <tbody class="text-slate-600">
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">-ance / -ence</td><td class="p-2 border-r">state or quality</td><td class="p-2">resistance, capacitance</td></tr>
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">-ify / -tion</td><td class="p-2 border-r">action / process</td><td class="p-2">rectify, attenuation, oscillation</td></tr>
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">-er / -or</td><td class="p-2 border-r">device</td><td class="p-2">transformer, oscillator</td></tr>
+                                                <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">-ic / -meter</td><td class="p-2 border-r">property / tool</td><td class="p-2">magnetic, voltmeter</td></tr>
+                                                <tr><td class="p-2 border-r font-bold" colspan="3"><span class="text-sky-700">Composite:</span> <strong>microelectromechanical</strong> = micro (small) + electro (electricity) + mechanical</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Module 2: Core Grammar -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">⚙️</span> Module 2: Core Grammar & Mechanics</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 p-6 bg-slate-50/50">
+                            
+                            <!-- Concept 4: Articles -->
+                            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">4. Using Articles (A, An, The, Zero)</h4>
+                                <p class="text-sm text-slate-600 mb-3">Crucial for specifying components and concepts accurately in technical writing.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                        <h5 class="font-bold text-sm text-slate-800 mb-1 border-b border-slate-200 pb-1">A / An (Indefinite)</h5>
+                                        <p class="text-xs text-slate-600 mb-2">Introducing a non-specific/new component.</p>
+                                        <ul class="text-xs text-slate-700 space-y-1 list-disc ml-4">
+                                            <li>"Connect <strong>a</strong> 10kΩ resistor." (Any 10kΩ resistor)</li>
+                                            <li>"The technician used <strong>an</strong> oscilloscope." (First mention)</li>
+                                        </ul>
+                                    </div>
+                                    <div class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                        <h5 class="font-bold text-sm text-slate-800 mb-1 border-b border-slate-200 pb-1">The (Definite)</h5>
+                                        <p class="text-xs text-slate-600 mb-2">Referring to previously mentioned/unique items.</p>
+                                        <ul class="text-xs text-slate-700 space-y-1 list-disc ml-4">
+                                            <li>"Measure voltage across <strong>the</strong> output terminals." (Specific ones)</li>
+                                            <li>"<strong>The</strong> Earth's magnetic field..." (Unique entity)</li>
+                                        </ul>
+                                    </div>
+                                    <div class="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                        <h5 class="font-bold text-sm text-slate-800 mb-1 border-b border-slate-200 pb-1">Zero Article (Ø)</h5>
+                                        <p class="text-xs text-slate-600 mb-2">General concepts, plurals, or named laws.</p>
+                                        <ul class="text-xs text-slate-700 space-y-1 list-disc ml-4">
+                                            <li>"<strong>Ø</strong> Electricity flows through conductors." (Uncountable)</li>
+                                            <li>"<strong>Ø</strong> Ohm's Law states that V = I × R." (Named Law)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Concept 5: Tenses -->
+                            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">5. Tenses in Academic Rhetoric</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse text-sm">
+                                        <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border border-slate-200">Tense</th><th class="p-2 border border-slate-200">Rhetorical Function</th><th class="p-2 border border-slate-200">Example</th></tr></thead>
+                                        <tbody class="text-slate-600">
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">Present Simple</td><td class="p-2 border-r">Scientific laws, component behavior, timeless conclusions</td><td class="p-2">"A diode <strong>conducts</strong> only when forward-biased." / "The results <strong>suggest</strong> a linear relationship."</td></tr>
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">Past Simple</td><td class="p-2 border-r">Completed actions, specific experimental procedures</td><td class="p-2">"The oscilloscope <strong>was connected</strong> to the output." / "We <strong>recorded</strong> voltage readings."</td></tr>
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold">Present Perfect</td><td class="p-2 border-r">Literature reviews, ongoing research areas</td><td class="p-2">"Researchers <strong>have developed</strong> efficient algorithms." / "Engineers <strong>have long sought</strong> to reduce losses."</td></tr>
+                                            <tr><td class="p-2 border-r font-bold">Future Forms</td><td class="p-2 border-r">Planned future work, predictions</td><td class="p-2">"The prototype <strong>will</strong> operate at 95% efficiency." / "Future work <strong>will examine</strong> active cooling."</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Concept 6: Clauses & Phrases -->
+                            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">6. Clauses & Phrases</h4>
+                                <p class="text-sm text-slate-600 mb-3">Combining simple sentences to show logical relationships without creating run-on sentences.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-bold text-sm text-slate-800 mb-2 border-b border-slate-200 pb-1">Dependent Clauses (Require Independent Clause)</h5>
+                                        <ul class="text-xs text-slate-700 space-y-2 list-disc ml-4">
+                                            <li><strong>Cause:</strong> "<strong>Because the input voltage exceeded the limit,</strong> the relay tripped."</li>
+                                            <li><strong>Condition:</strong> "<strong>If the gate voltage falls below 2V,</strong> the MOSFET turns off."</li>
+                                            <li><strong>Contrast:</strong> "<strong>Although the simulation predicted 92%,</strong> the prototype achieved 87%."</li>
+                                            <li><strong>Time:</strong> "<strong>After the capacitor fully discharges,</strong> the timer resets."</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-bold text-sm text-slate-800 mb-2 border-b border-slate-200 pb-1">Phrases (No subject-verb pair)</h5>
+                                        <ul class="text-xs text-slate-700 space-y-2 list-disc ml-4">
+                                            <li><strong>Participial (Present):</strong> "<strong>Operating at high frequencies,</strong> the transformer experienced losses."</li>
+                                            <li><strong>Participial (Past):</strong> "<strong>Connected in parallel,</strong> the resistors provide 500Ω."</li>
+                                            <li><strong>Infinitive:</strong> "<strong>To minimize noise,</strong> separate ground planes were used."</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Concept 7: Punctuation Marks -->
+                            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">7. Punctuation Marks for Technical English</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <strong class="text-sky-800">Commas (,)</strong><br>
+                                        <span class="text-xs text-slate-600">List items, intro clauses, around transitions.<br><em>"Before soldering, verify polarity."</em></span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <strong class="text-sky-800">Hyphens (-)</strong><br>
+                                        <span class="text-xs text-slate-600">Compound adjectives, numbers as adjectives.<br><em>"a high-frequency signal", "a 10-Ω resistor"</em></span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <strong class="text-sky-800">Semicolons (;)</strong><br>
+                                        <span class="text-xs text-slate-600">Linking independent clauses; before conjunctive adverbs.<br><em>"...tolerance; therefore, the lockout engaged."</em></span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <strong class="text-sky-800">Colons (:)</strong><br>
+                                        <span class="text-xs text-slate-600">Introducing lists or direct explanations.<br><em>"Revealed three issues: ripple, noise, drift."</em></span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <strong class="text-sky-800">Parentheses ( )</strong><br>
+                                        <span class="text-xs text-slate-600">Clarifying data, alternative units.<br><em>"The length was 10 m (32.8 ft)."</em></span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                        <strong class="text-sky-800">Brackets [ ]</strong><br>
+                                        <span class="text-xs text-slate-600">In-text citations; editing quotes.<br><em>"...maximum voltage: [5.5V DC]." / "[1]"</em></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </details>
+
+                    <!-- Module 3: Advanced Academic Writing -->
+                    <details class="group bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <summary class="flex justify-between items-center font-bold cursor-pointer list-none bg-slate-100 p-5 border-b border-slate-200 hover:bg-sky-50 transition-colors">
+                            <span class="text-lg text-sky-800 flex items-center"><span class="text-xl mr-3">🔬</span> Module 3: Advanced Academic Writing & Synthesis</span>
+                            <span class="transition-transform duration-300 group-open:rotate-180 text-sky-600">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 p-6 bg-slate-50/50">
+                            
+                            <!-- Summarization -->
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">8. Summarization in Academic Writing</h4>
+                                <p class="text-sm text-slate-600 mb-2">Distilling complex technical documents into concise overviews. Steps:</p>
+                                <ol class="list-decimal ml-5 text-xs text-slate-700 space-y-1 mb-4">
+                                    <li>Identify the core research problem.</li>
+                                    <li>Extract key quantitative findings.</li>
+                                    <li>Note the methodology briefly.</li>
+                                    <li>Preserve technical accuracy (units, values).</li>
+                                    <li>Omit secondary examples.</li>
+                                </ol>
+                                <div class="bg-slate-50 p-3 border border-slate-200 rounded-lg">
+                                    <strong class="text-xs text-sky-800">Poor Summary:</strong>
+                                    <p class="text-xs text-red-600 italic mb-2">"The IRF540N is a transistor for power applications that works well at certain temperatures."</p>
+                                    <strong class="text-xs text-sky-800">Good Summary:</strong>
+                                    <p class="text-xs text-green-700 italic">"The IRF540N is an N-channel power MOSFET with a typical on-resistance of 44 mΩ and maximum ratings of 100 V and 33 A (at 25°C). The device targets DC-DC converters."</p>
+                                </div>
+                            </div>
+
+                            <!-- Literature Review -->
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <h4 class="font-bold text-sky-700 text-md mb-2">9. Literature Review Synthesis</h4>
+                                <p class="text-sm text-slate-600 mb-2">Organize by <strong>Theme</strong>, not Chronologically.</p>
+                                <div class="overflow-x-auto mb-3">
+                                    <table class="w-full text-left border-collapse text-xs">
+                                        <tbody class="text-slate-600">
+                                            <tr class="border-b border-slate-200"><td class="p-2 border-r font-bold bg-red-50 text-red-800 w-1/2">Weak (Chronological List)</td><td class="p-2 bg-green-50 text-green-800 font-bold w-1/2">Strong (Thematic Synthesis)</td></tr>
+                                            <tr><td class="p-2 border-r align-top">"Smith (2018) studied MPPT algorithms. Jones (2019) also studied MPPT. Lee (2020) studied battery storage."</td><td class="p-2 align-top">"Three main approaches to MPPT have emerged: perturb-and-observe (Smith, 2018; Jones, 2019), and incremental conductance (Lee, 2020)."</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <h5 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-1">Useful Rhetorical Phrases</h5>
+                                <ul class="list-disc ml-4 text-xs text-slate-700 space-y-1">
+                                    <li><strong>Consensus:</strong> "There is general agreement that..."</li>
+                                    <li><strong>Disagreement:</strong> "In contrast to previous work..."</li>
+                                    <li><strong>Gaps:</strong> "Little attention has been paid to..."</li>
+                                </ul>
+                            </div>
+
+                            <!-- IEEE Citation & Methodology -->
+                            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                    <h4 class="font-bold text-sky-700 text-md mb-2">10. IEEE Citation Style</h4>
+                                    <ul class="list-disc ml-4 text-sm text-slate-700 space-y-2">
+                                        <li><strong>In-Text:</strong> Use numerical brackets. <em>"Switching losses dominate [1]."</em> or <em>"As demonstrated by Chen [4]..."</em></li>
+                                        <li><strong>Multiple:</strong> <em>"Several authors examined this [2], [3], [5]–[7]."</em></li>
+                                        <li><strong>Journal Format:</strong> [N] A. Author, "Title," <em>Journal Name</em>, vol. X, no. Y, pp. xx-xx, Month Year.</li>
+                                        <li><strong>Book Format:</strong> [N] A. Author, <em>Book Title</em>, Xth ed. City: Publisher, Year.</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all duration-300 transform hover:-translate-y-1">
+                                    <h4 class="font-bold text-sky-700 text-md mb-2">11. Evaluating a Methodology</h4>
+                                    <p class="text-sm text-slate-600 mb-2">Critical thinking analysis of experimental designs.</p>
+                                    <ul class="list-disc ml-4 text-xs text-slate-700 space-y-1 mb-2">
+                                        <li><strong>Validity:</strong> Does the method measure what it claims?</li>
+                                        <li><strong>Reliability:</strong> Is the procedure documented clearly for replication?</li>
+                                        <li><strong>Controls:</strong> Were confounding variables controlled?</li>
+                                        <li><strong>Instrumentation:</strong> Are sensors calibrated? Resolution sufficient?</li>
+                                    </ul>
+                                    <p class="bg-slate-50 p-2 rounded text-xs italic border border-slate-200">"The methodology has several strengths... However, the authors tested only at 25°C. The method would be strengthened by thermal characterization."</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </details>
+
+                    <!-- Final Summary -->
+                    <div class="bg-gradient-to-r from-sky-600 to-indigo-600 rounded-2xl p-6 shadow-md text-white mt-4">
+                        <h3 class="font-bold text-xl mb-4 text-white flex items-center"><span class="mr-2">🎯</span> Final Quick Reference: Grammar for EE Writing</h3>
+                        <div class="overflow-x-auto bg-white/10 rounded-xl border border-white/20 p-2">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead><tr class="border-b border-white/30 text-sky-100"><th class="p-3">If you want to...</th><th class="p-3">Use...</th><th class="p-3">Example</th></tr></thead>
+                                <tbody>
+                                    <tr class="border-b border-white/10"><td class="p-3 font-semibold">State a scientific fact</td><td class="p-3">Present Simple</td><td class="p-3 italic text-sky-50">"Current flows from higher to lower potential."</td></tr>
+                                    <tr class="border-b border-white/10"><td class="p-3 font-semibold">Describe an experiment you did</td><td class="p-3">Past Simple</td><td class="p-3 italic text-sky-50">"The circuit was assembled on a breadboard."</td></tr>
+                                    <tr class="border-b border-white/10"><td class="p-3 font-semibold">Review previous research</td><td class="p-3">Present Perfect</td><td class="p-3 italic text-sky-50">"Several studies have investigated this topology."</td></tr>
+                                    <tr class="border-b border-white/10"><td class="p-3 font-semibold">Specify a new component</td><td class="p-3">A / An</td><td class="p-3 italic text-sky-50">"Connect a 100Ω resistor."</td></tr>
+                                    <tr class="border-b border-white/10"><td class="p-3 font-semibold">Refer to a specific component</td><td class="p-3">The</td><td class="p-3 italic text-sky-50">"Measure voltage across the resistor."</td></tr>
+                                    <tr><td class="p-3 font-semibold">Cite a source numerically</td><td class="p-3">Bracketed numbers [1]</td><td class="p-3 italic text-sky-50">"Efficiency improves at lower temperatures [4]."</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
         </main>
+
+        <!-- Animated Gradient Footer -->
+        <footer id="main-footer" class="footer-gradient text-white text-center py-1 w-full text-xs font-bold tracking-wider relative z-20">
+            All rights are reserved to Dr. Mazen Badawy – Doctor of English Teaching & Testing
+        </footer>
     </div>
 
     <script>
+        // --- UI & TAB LOGIC ---
+        const toggleBarsBtn = document.getElementById('toggle-bars-btn');
+        const mainHeader = document.getElementById('main-header');
+        const mainFooter = document.getElementById('main-footer');
+
+        if(toggleBarsBtn) {
+            toggleBarsBtn.addEventListener('click', () => {
+                mainHeader.classList.toggle('hidden');
+                mainFooter.classList.toggle('hidden');
+                
+                // Adjust styling so it's clearly visible when overlapping the white tabs
+                if (mainHeader.classList.contains('hidden')) {
+                    toggleBarsBtn.classList.remove('text-white', 'bg-black/10', 'hover:bg-black/20');
+                    toggleBarsBtn.classList.add('text-sky-600', 'bg-sky-100', 'hover:bg-sky-200', 'border', 'border-sky-200', 'shadow-md');
+                } else {
+                    toggleBarsBtn.classList.add('text-white', 'bg-black/10', 'hover:bg-black/20');
+                    toggleBarsBtn.classList.remove('text-sky-600', 'bg-sky-100', 'hover:bg-sky-200', 'border', 'border-sky-200', 'shadow-md');
+                }
+            });
+        }
+
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active classes from all buttons
+                tabBtns.forEach(b => {
+                    b.classList.remove('bg-sky-500', 'text-white', 'scale-105', 'active-tab');
+                    b.classList.add('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200', 'inactive-tab');
+                });
+                
+                // Add active class to clicked button
+                btn.classList.remove('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200', 'inactive-tab');
+                btn.classList.add('bg-sky-500', 'text-white', 'scale-105', 'active-tab');
+
+                // Hide all tab contents
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                // Show target tab content
+                const targetId = btn.getAttribute('data-target');
+                const targetContent = document.getElementById(targetId);
+                if(targetContent) {
+                    targetContent.classList.remove('hidden');
+                }
+            });
+        });
+
+        // --- CHAT & EVALUATION LOGIC ---
         const chatWindow = document.getElementById('chat-window');
-        const chatForm = document.getElementById('chat-form');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
+        
+        // Assistant Tab Elements
+        const assistantForm = document.getElementById('assistant-form');
+        const assistantInput = document.getElementById('assistant-input');
+        const assistantSendBtn = document.getElementById('assistant-send-btn');
         const suggestionsContainer = document.getElementById('suggestions');
 
+        // Evaluation Tab Elements
+        const evalForm = document.getElementById('eval-form');
+        const evalInput = document.getElementById('eval-input');
+        const evalFile = document.getElementById('eval-file');
+        const evalUploadBtn = document.getElementById('eval-upload-btn');
+        const evalSection = document.getElementById('eval-section');
+        const evalSendBtn = document.getElementById('eval-send-btn');
+        const evalOutput = document.getElementById('eval-output');
+        const evalEmptyState = document.getElementById('eval-empty-state');
+        const evalLoadingState = document.getElementById('eval-loading-state');
+
         const API_MODEL = 'gemini-2.5-flash-preview-05-20';
-        const API_KEY = "AIzaSyB8IlKHHSJY28PIs_Zob2d7-HSD6UyXPFo";
+        // Set an empty string to allow the Canvas environment to inject the API key at runtime.
+        const apiKey = ""; 
+
+        // Rubric Data for dynamic table generation
+        const RUBRIC_DATA = [
+            {
+                category: "I. Structure and Organization (15%)",
+                items: [
+                    { key: "I_Adherence", name: "Adherence to Template", 4: "Follows all required sections exactly", 3: "Missing 1 minor section", 2: "Missing 2–3 sections", 1: "No clear structure" },
+                    { key: "I_Flow", name: "Logical Flow", 4: "Ideas progress clearly; smooth transitions", 3: "Minor gaps but overall logical", 2: "Several jumps in logic", 1: "No coherent progression" },
+                    { key: "I_Formatting", name: "Formatting Compliance", 4: "Consistent with IEEE standards", 3: "1–2 minor errors", 2: "3–5 formatting errors", 1: "Major formatting violations" }
+                ]
+            },
+            {
+                category: "II. Content Quality and Technical Depth (20%)",
+                items: [
+                    { key: "II_Problem", name: "Problem Statement & Obj.", 4: "Clear, specific, measurable", 3: "Present but not fully measurable", 2: "Vague problem / incomplete", 1: "No clear problem stated" },
+                    { key: "II_Literature", name: "Literature Review", 4: "Comprehensive synthesis; min 50 citations", 3: "Good coverage; lacks critical eval", 2: "Descriptive only; few citations", 1: "Very limited / irrelevant" },
+                    { key: "II_Methodology", name: "Methodology", 4: "Detailed, reproducible; tools explained", 3: "Described; minor steps missing", 2: "High-level only; reproducibility unlikely", 1: "No methodology" },
+                    { key: "II_Implementation", name: "Implementation", 4: "Complete, detailed description; specs and code documented", 3: "Described but missing some details", 2: "High-level overview only", 1: "No implementation description" },
+                    { key: "II_Results", name: "Results and Analysis", 4: "Clear IEEE tables/figures; thorough analysis", 3: "Clear results; shallow analysis", 2: "Results without meaningful analysis", 1: "Results missing/irrelevant" },
+                    { key: "II_Conclusion", name: "Conclusion & Future Work", 4: "Summarizes findings, proposes feasible work", 3: "Present but future work vague", 2: "Weak conclusion / no future work", 1: "Conclusion missing entirely" }
+                ]
+            },
+            {
+                category: "III. Technical Accuracy and Rigor (20%)",
+                items: [
+                    { key: "III_Terminology", name: "Technical Terminology", 4: "Defined at first use and used correctly", 3: "Most correct; minor misuse", 2: "Frequent misuse / undefined", 1: "Consistently incorrect" },
+                    { key: "III_Notation", name: "Formal Notation & Math", 4: "All equations correct, numbered (IEEE)", 3: "Minor errors / missing explanations", 2: "Several errors / unclear", 1: "No formal notation" },
+                    { key: "III_Evidence", name: "Evidence and Support", 4: "All claims supported by data/citations", 3: "Most claims supported", 2: "Some unsupported/anecdotal", 1: "Purely opinion-based" }
+                ]
+            },
+            {
+                category: "IV. Clarity and Readability (15%)",
+                items: [
+                    { key: "IV_Language", name: "Language and Grammar", 4: "No errors; professional, objective tone", 3: "1–3 minor errors", 2: "4–6 errors; awkward phrasing", 1: ">6 errors; unreadable/informal" },
+                    { key: "IV_Structure", name: "Sentence & Paragraph Structure", 4: "Varied structure; focused paragraphs", 3: "Mostly good; occasional run-ons", 2: "Many weak/fragmented sentences", 1: "Lack clear structure" },
+                    { key: "IV_Acronyms", name: "Acronym Management", 4: "All defined at first occurrence", 3: "One or two undefined initially", 2: "Several undefined", 1: "Most undefined/inconsistent" }
+                ]
+            },
+            {
+                category: "V. Figures, Tables, and References (15%)",
+                items: [
+                    { key: "V_Figures", name: "Figures and Tables", 4: "Numbered (IEEE), captioned, referenced", 3: "Minor issues (e.g., missing ref)", 2: "Poor quality/numbering", 1: "No figures/tables where needed" },
+                    { key: "V_Citations", name: "Citations", 4: "All correct IEEE format, chronological", 3: "1-2 format errors", 2: "Several errors/inconsistent", 1: "No citations/plagiarism" },
+                    { key: "V_References", name: "Reference List", 4: "Complete, consistent IEEE format", 3: "Minor formatting inconsistencies", 2: "Missing/incomplete entries", 1: "No list/noncompliant" }
+                ]
+            },
+            {
+                category: "VI. Engineering Report Conventions (15%)",
+                items: [
+                    { key: "VI_FrontMatter", name: "Front Matter", 4: "All required present & formatted correctly", 3: "One component missing/flawed", 2: "Two components flawed", 1: "Incomplete or absent" },
+                    { key: "VI_Appendices", name: "Appendices", 4: "Present, fully referenced, labeled", 3: "Present but not fully referenced", 2: "Incomplete/poorly organized", 1: "No appendices when required" },
+                    { key: "VI_Lists", name: "Lists (TOC, LOF, LOT)", 4: "All present, accurate page numbers (IEEE)", 3: "Minor errors in numbering/format", 2: "Several errors; incomplete", 1: "Missing required lists" }
+                ]
+            }
+        ];
 
         // The system prompt to define the chatbot's persona and task
-        const SYSTEM_PROMPT = `You are an expert AI tutor specializing in technical writing for university-level engineering students, specifically adhering to the guidelines provided by Dr. Mazen Badawy. Your name is 'TechWrite Tutor'. Your tone must be encouraging, professional, and exceptionally clear. Your primary goal is to provide practical, actionable advice based *only* on the provided course materials.
+        const SYSTEM_PROMPT = `You are an expert AI tutor specializing in technical writing for university-level engineering students, specifically adhering to the guidelines provided by Dr. Mazen Badawy. Your name is 'TechWrite Tutor'. Your tone must be encouraging, professional, and exceptionally clear. Your primary goal is to provide practical, actionable advice based *only* on the provided course materials and the strict rubric below.
 
         **Core Instructions based on Provided Files:**
+        1.  **General Writing Style:** Emphasize formal, Latinate verbs. Objective tone. Avoid contractions and jargon. Ensure correct grammar.
+        2.  **Engineering Report Structure:** Abstract, Introduction, Literature Review, Methodology, Implementation, Discussion, Conclusion, Recommendations.
+        3.  **Data Visualization & Tables:** All numbered, captioned, referenced, and clear.
+        4.  **Citations:** Strictly enforce the IEEE citation style.
 
-        1.  **General Writing Style (from 'Technical Reporting Part2 (Fundementals of Writing).docx'):**
-            * **Formality:** Emphasize the use of formal, Latinate verbs (e.g., 'perform' instead of 'carry out', 'discuss' instead of 'talk about'). Advise against phrasal verbs in formal reports.
-            * **Objectivity:** Instruct students to write objectively, avoiding personal pronouns like 'I' or 'we' unless stating a direct, informed opinion in a discussion or conclusion. Avoid value-judgement adjectives (e.g., 'fantastic', 'brilliant') and clichés.
-            * **Clarity:** Explain the importance of avoiding contractions (e.g., 'isn't', 'don't') and using full terms before introducing abbreviations (e.g., "North Atlantic Treaty Organization (NATO)").
-            * **Grammar:** Be prepared to explain core grammar concepts like parts of speech, clauses, phrases, and correct punctuation (commas, semicolons, colons, apostrophes) with engineering-relevant examples.
+        **MANDATORY EVALUATION RUBRIC (21 Criteria):**
+        Use the following rubric to assess any user-submitted text. Apply the relevant criteria strictly:
 
-        2.  **Engineering Report Structure (from 'Technical Reporting Part1 (Engineering Report).docx' and 'HIET - Electrical Engineering Report Template Ver 2.docx'):**
-            * **Abstract:** An abstract must be a concise summary (150-250 words) covering the objective, methods, key results, and conclusion. It should be in the past tense and contain no citations.
-            * **Introduction:** This chapter must establish context. Guide students to include: Background Information, a clear Problem Statement, specific Research Objectives, Scope and Limitations, and the Significance of the study.
-            * **Literature Review:** Explain its purpose: to provide an overview of existing research, identify gaps, and establish a foundation for the current study.
-            * **Methodology:** This section must be detailed enough for replication. It should include Research Design, System Architecture (with block diagrams), Materials/Tools used, a step-by-step Implementation Procedure, and Testing/Validation methods.
-            * **Implementation:** Guide students on how to describe the transformation of theory into a working solution, detailing hardware assembly, software development, and integration challenges.
-            * **Discussion, Conclusion, and Recommendations:** The discussion interprets results, the conclusion summarizes achievements against objectives, and recommendations suggest specific future work or improvements.
+        I. Structure and Organization (Weight: 15%)
+        - Adherence to Template: Abstract, TOC, chapters, references, appendices.
+        - Logical Flow: Clear progression (Introduction -> Literature -> Methodology -> Implementation -> Results -> Conclusion).
+        - Formatting Compliance: IEEE template standards.
 
-        3.  **Data Visualization & Tables (from 'Visualization and Tables.pptx'):**
-            * **Purpose:** Explain that figures (block diagrams, circuit diagrams, flowcharts, graphs) and tables are used to simplify complex information and present data clearly.
-            * **Labeling:** ALL figures and tables must be numbered and have a clear, descriptive title/caption (e.g., "Figure 4.1: Block Diagram of the Power Supply System", "Table 2.1: Output Voltages for Different Load Conditions").
-            * **Referencing:** Every figure and table must be referred to and explained in the main body of the text (e.g., "As shown in Figure 4.1...").
-            * **Clarity:** Advise students to keep diagrams simple, use standard symbols, ensure text is readable, and maintain consistency in style. For tables, headings must be clear and units must be specified in the headings, not in every cell.
+        II. Content Quality and Technical Depth (Weight: 20%)
+        - Problem Statement and Objectives: Clear, measurable.
+        - Literature Review: Comprehensive, critical synthesis.
+        - Methodology: Detailed, reproducible.
+        - Implementation: Complete, detailed description; hardware/software specs.
+        - Results and Analysis: Clear presentation, thorough analysis.
+        - Conclusion and Future Work: Summarizes findings, proposes feasible future work.
 
-        4.  **Citations (from 'IEEE Citation style.pptx'):**
-            * **Style:** Strictly enforce the IEEE citation style.
-            * **In-text:** Citations are numbers in square brackets, e.g., [1].
-            * **Reference List:** The list at the end is numbered in the order of appearance.
-            * **Formatting:** Provide specific examples for different source types (books, journal articles, conference papers, websites) exactly as shown in the presentation. For instance, for a journal article: [1] J. K. Author, "Title of article," *Title of Journal*, vol. x, no. x, pp. xx-xx, Month Year.
+        III. Technical Accuracy and Rigor (Weight: 20%)
+        - Technical Terminology: Specialized terms defined and used correctly.
+        - Formal Notation and Mathematics: Equations and notations correct and explained.
+        - Evidence and Support: Claims supported by data/citations.
+
+        IV. Clarity and Readability (Weight: 15%)
+        - Language and Grammar: No spelling/grammatical errors, professional tone.
+        - Sentence and Paragraph Structure: Varied, focused paragraphs.
+        - Acronym Management: Defined at first occurrence.
+
+        V. Figures, Tables, and References (Weight: 15%)
+        - Figures and Tables: Numbered (IEEE style), descriptive captions, referenced.
+        - Citations: IEEE format (e.g., [1]), in order.
+        - Reference List: Complete, IEEE format.
+
+        VI. Engineering Report Conventions (Weight: 15%)
+        - Front Matter: Declaration, abstract.
+        - Appendices: Present and referenced.
+        - Lists: TOC, LOF, LOT present and accurate.
+
+        **Scoring Output Format (CRITICAL):**
+        When evaluating a text based on the rubric, you MUST output your evaluation wrapped EXACTLY in the following XML-like tags so the interface can render an interactive visual widget. Do not deviate from this tag structure:
+
+        <evaluation>
+        <score>X/84</score>
+        <grade>Y</grade>
+        <rubric_scores>
+        {
+          "I_Adherence": {"score": 4, "feedback": ""},
+          "I_Flow": {"score": 3, "feedback": "Transitions between the methodology and results are somewhat abrupt."},
+          "I_Formatting": {"score": 4, "feedback": ""},
+          "II_Problem": {"score": 2, "feedback": "The problem statement is vague and lacks measurable engineering objectives."}
+        }
+        </rubric_scores>
+        <strengths>
+        - [Strength 1]
+        - [Strength 2]
+        </strengths>
+        <improvements>
+        - [Improvement 1]
+        - [Improvement 2]
+        </improvements>
+        <recommendation>[Recommendation here, e.g., Accept with minor revisions]</recommendation>
+        </evaluation>
+        
+        *Note on rubric_scores*: Provide a JSON object where each key maps to an object containing a 'score' (1-4) and a 'feedback' string. If a criterion scores less than 4, you MUST provide a brief, specific example or area for enhancement in the 'feedback' field based on their text. For a score of 4, leave 'feedback' empty. Only include relevant criteria keys. Do not include markdown ticks inside the tag.
+
+        You may include conversational, encouraging text before and after the <evaluation> block.
 
         **Interaction Rules:**
-        * When a student asks a question, synthesize information from ALL relevant provided documents to give a comprehensive answer.
-        * Always use engineering-specific examples to illustrate points.
-        * Format responses using Markdown for readability (bold for headings, bullet points for lists, code blocks for examples).
-        * Do not go off-topic. Stick strictly to the provided technical and academic writing guidelines.`;
+        * Synthesize information comprehensively. Use engineering-specific examples.
+        * If evaluating a specific section (e.g., Abstract), only score the rubric components relevant to that section, adjusting the total score out of the relevant criteria maximum, but still use the tags.
+        * Do not go off-topic. Stick strictly to technical and academic writing guidelines.`;
+
+        // Helper to convert simple markdown to HTML safely
+        const markdownToHtml = (str) => {
+            if (!str) return '';
+            // Safely parse lists
+            let html = str.replace(/^- (.*$)/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>(\n<li>.*<\/li>)*)/g, '<ul class="ml-5 list-disc mb-2 space-y-1">$1</ul>');
+            
+            // Parse standard formatting
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                       .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                       .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 p-3 rounded-lg text-sm my-3 overflow-x-auto border border-gray-200"><code>$1</code></pre>')
+                       .replace(/`([^`]+)`/g, '<code class="bg-slate-100 text-rose-600 px-1.5 py-0.5 rounded border border-slate-200">$1</code>');
+                       
+            // Convert newlines to breaks
+            html = html.replace(/\n/g, '<br>');
+            
+            // Clean up artifacts inside ul/li
+            html = html.replace(/<\/li><br>/g, '</li>').replace(/<ul(.*?)><br>/g, '<ul$1>');
+            return html;
+        };
+
+        // Function to create the interactive evaluation widget from XML text
+        function generateEvaluationWidgetHtml(innerXml) {
+            const getTag = (tag) => {
+                const reg = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`);
+                const m = innerXml.match(reg);
+                return m ? m[1].trim() : '';
+            };
+
+            const scoreText = getTag('score');
+            const gradeText = getTag('grade');
+            const scoresRaw = getTag('rubric_scores');
+            const strengthsRaw = getTag('strengths');
+            const improvementsRaw = getTag('improvements');
+            const recommendationRaw = getTag('recommendation');
+
+            const strengthsHtml = markdownToHtml(strengthsRaw);
+            const improvementsHtml = markdownToHtml(improvementsRaw);
+            const recommendationHtml = markdownToHtml(recommendationRaw).replace(/<br>/g, ' ');
+
+            let parsedScores = {};
+            try {
+                // Ensure we only extract the valid JSON object string
+                let cleanedRaw = scoresRaw.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const startIndex = cleanedRaw.indexOf('{');
+                const endIndex = cleanedRaw.lastIndexOf('}');
+                
+                if (startIndex !== -1 && endIndex !== -1) {
+                    cleanedRaw = cleanedRaw.substring(startIndex, endIndex + 1);
+                }
+                
+                // Fix potential trailing commas generated by AI (e.g. "a": 4, })
+                cleanedRaw = cleanedRaw.replace(/,\s*}/g, '}');
+                
+                parsedScores = JSON.parse(cleanedRaw);
+            } catch(e) {
+                console.error("Could not parse rubric scores json", e);
+                console.log("Raw string attempted to parse:", scoresRaw);
+            }
+
+            // Calculate progress bar percentage
+            let scoreValue = 0;
+            let scoreMatch = scoreText.match(/(\d+)/);
+            if(scoreMatch) {
+                let num = parseInt(scoreMatch[1]);
+                let maxMatch = scoreText.match(/\/(\d+)/);
+                let maxNum = maxMatch ? parseInt(maxMatch[1]) : 84;
+                scoreValue = Math.min(100, Math.round((num / maxNum) * 100)); 
+            }
+
+            // Determine Badge Color based on Grade
+            let gradeColor = 'bg-slate-500';
+            if(gradeText.includes('A')) gradeColor = 'bg-emerald-500';
+            else if(gradeText.includes('B')) gradeColor = 'bg-blue-500';
+            else if(gradeText.includes('C')) gradeColor = 'bg-yellow-500';
+            else if(gradeText.includes('D')) gradeColor = 'bg-orange-500';
+            else if(gradeText.includes('F')) gradeColor = 'bg-rose-600';
+
+            // Generate Highlighted Rubric Tables with Tooltips
+            let rubricTablesHtml = `<div class="space-y-6 my-8">`;
+            RUBRIC_DATA.forEach(category => {
+                let hasScoredItems = false;
+                let rowsHtml = '';
+                category.items.forEach(item => {
+                    const scoreObj = parsedScores[item.key];
+                    if (scoreObj !== undefined) {
+                        hasScoredItems = true;
+                        
+                        let score = scoreObj;
+                        let feedback = "";
+                        if (typeof scoreObj === 'object' && scoreObj !== null) {
+                            score = scoreObj.score;
+                            feedback = scoreObj.feedback || "";
+                        }
+
+                        const getCellHtml = (level) => {
+                            if (score === level) {
+                                let activeClass = "";
+                                let tipColor = "";
+                                if(level === 4) { activeClass = "bg-green-100 border-2 border-green-500 text-green-900"; tipColor = "bg-green-800 border-green-600"; }
+                                if(level === 3) { activeClass = "bg-blue-100 border-2 border-blue-500 text-blue-900"; tipColor = "bg-blue-800 border-blue-600"; }
+                                if(level === 2) { activeClass = "bg-yellow-100 border-2 border-yellow-500 text-yellow-900"; tipColor = "bg-yellow-800 border-yellow-600"; }
+                                if(level === 1) { activeClass = "bg-red-100 border-2 border-red-500 text-red-900"; tipColor = "bg-red-800 border-red-600"; }
+                                
+                                let tooltipHtml = "";
+                                let cursorClass = level < 4 && feedback ? "cursor-help group" : "";
+                                
+                                if (level < 4 && feedback) {
+                                    tooltipHtml = `
+                                    <div class="absolute bottom-[105%] left-1/2 -translate-x-1/2 w-64 p-3 ${tipColor} text-white text-xs leading-relaxed rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] pointer-events-none font-normal text-left normal-case border">
+                                        <div class="font-bold text-white/90 mb-1.5 border-b border-white/20 pb-1.5 flex items-center">
+                                            <span class="mr-1.5 text-base">💡</span> Enhancement Details
+                                        </div>
+                                        ${feedback}
+                                        <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 w-3 h-3 ${tipColor} rotate-45 border-r border-b z-[-1]"></div>
+                                    </div>`;
+                                }
+
+                                return `<div class="${activeClass} font-bold shadow-md scale-[1.03] relative z-10 rounded-lg p-2 text-xs h-full text-center flex flex-col items-center justify-center ${cursorClass} hover:scale-[1.08] hover:shadow-lg hover:z-50 transition-all duration-300">
+                                    ${item[level]}
+                                    ${tooltipHtml}
+                                </div>`;
+                            }
+                            return `<div class="bg-slate-50 text-slate-400 opacity-50 border border-slate-200 rounded-lg p-2 text-xs h-full text-center flex items-center justify-center">${item[level]}</div>`;
+                        };
+
+                        rowsHtml += `
+                            <tr>
+                                <td class="p-3 text-sm font-bold border-b border-slate-200 w-1/5 bg-slate-50 text-slate-700">${item.name}</td>
+                                <td class="p-2 border-b border-slate-200 w-1/5">${getCellHtml(4)}</td>
+                                <td class="p-2 border-b border-slate-200 w-1/5">${getCellHtml(3)}</td>
+                                <td class="p-2 border-b border-slate-200 w-1/5">${getCellHtml(2)}</td>
+                                <td class="p-2 border-b border-slate-200 w-1/5">${getCellHtml(1)}</td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                if (hasScoredItems) {
+                    rubricTablesHtml += `
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                            <div class="bg-gradient-to-r from-slate-100 to-slate-50 p-3 border-b border-slate-200">
+                                <h4 class="font-bold text-sky-800 text-sm m-0">${category.category}</h4>
+                            </div>
+                            <div class="overflow-x-auto pt-6 pb-4 px-1">
+                                <table class="w-full text-left border-collapse min-w-[700px]">
+                                    <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
+                                        <tr>
+                                            <th class="p-3 border-b border-slate-200 font-semibold w-1/5">Criterion</th>
+                                            <th class="p-3 border-b border-slate-200 font-semibold text-green-700 text-center w-1/5">Excellent (4)</th>
+                                            <th class="p-3 border-b border-slate-200 font-semibold text-blue-700 text-center w-1/5">Proficient (3)</th>
+                                            <th class="p-3 border-b border-slate-200 font-semibold text-yellow-700 text-center w-1/5">Developing (2)</th>
+                                            <th class="p-3 border-b border-slate-200 font-semibold text-red-700 text-center w-1/5">Inadequate (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${rowsHtml}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            rubricTablesHtml += `</div>`;
+
+            return `
+            <div class="mb-6 border border-slate-200 rounded-2xl overflow-hidden shadow-lg bg-white w-full font-sans transition-all">
+                <!-- Header: Score & Grade -->
+                <div class="bg-gradient-to-br from-slate-50 to-slate-100 p-6 flex flex-col sm:flex-row items-center justify-between border-b border-slate-200 gap-6">
+                    <div class="w-full sm:w-2/3">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center"><span class="mr-2">📊</span> Assessment Score</p>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-3xl font-black text-slate-700">${scoreText}</span>
+                            <div class="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
+                                <div class="h-full ${gradeColor} transition-all duration-1000 ease-out" style="width: ${scoreValue}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center justify-center min-w-[120px]">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-2">Final Grade</p>
+                        <div class="${gradeColor} text-white text-4xl font-black px-8 py-2 rounded-xl shadow-md transform hover:scale-105 transition-transform duration-300">
+                            ${gradeText}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dynamic Interactive Rubric Tables -->
+                <div class="px-6 pb-2">
+                    ${rubricTablesHtml}
+                </div>
+
+                <!-- Body: Strengths & Improvements -->
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border-t border-slate-200">
+                    <div class="bg-emerald-50/70 p-5 rounded-xl border-l-4 border-emerald-500">
+                        <h4 class="font-bold text-emerald-800 text-lg mb-3 flex items-center border-b border-emerald-200/50 pb-2">
+                            <span class="text-xl mr-2">✅</span> Key Strengths
+                        </h4>
+                        <div class="text-emerald-900 text-sm leading-relaxed space-y-2">${strengthsHtml}</div>
+                    </div>
+                    <div class="bg-rose-50/70 p-5 rounded-xl border-l-4 border-rose-500">
+                        <h4 class="font-bold text-rose-800 text-lg mb-3 flex items-center border-b border-rose-200/50 pb-2">
+                            <span class="text-xl mr-2">📈</span> Areas for Improvement
+                        </h4>
+                        <div class="text-rose-900 text-sm leading-relaxed space-y-2">${improvementsHtml}</div>
+                    </div>
+                </div>
+
+                <!-- Footer: Recommendation -->
+                <div class="p-5 border-t border-slate-100 bg-slate-50 flex flex-col items-center justify-center text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">Evaluator Recommendation</p>
+                    <div class="btn-gradient-execute text-white text-base font-bold px-8 py-2.5 rounded-full shadow-md w-full md:w-auto inline-flex items-center justify-center">
+                        <span class="mr-2">📝</span> ${recommendationHtml}
+                    </div>
+                </div>
+            </div>`;
+        }
 
         /**
-         * Adds a message to the chat window.
+         * Adds a message to the ASSISTANT chat window.
          * @param {string} message - The message content.
          * @param {string} sender - 'user' or 'bot'.
          */
-        function addMessage(message, sender) {
+        function addChatMessage(message, sender) {
             const bubble = document.createElement('div');
-            bubble.className = `chat-bubble p-4 rounded-lg ${sender === 'user' ? 'user-bubble' : 'bot-bubble'}`;
+            bubble.className = `chat-bubble p-4 rounded-xl shadow-sm ${sender === 'user' ? 'user-bubble ml-auto' : 'bot-bubble w-full md:max-w-[90%]'}`;
             
-            // A simple markdown to HTML converter
-            let formattedMessage = message
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')     // Italic
-                .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 p-2 rounded text-sm my-2 overflow-x-auto"><code>$1</code></pre>') // Code block
-                .replace(/`([^`]+)`/g, '<code class="bg-gray-200 text-red-600 px-1 rounded">$1</code>') // Inline code
-                .replace(/^- (.*$)/gm, '<ul><li class="ml-4 list-disc">$1</li></ul>')
-                .replace(/(\<\/ul\>\n\<ul\>)/g, ''); // Fix for multiple list items
+            let formattedMessage = message;
+            let evalBlocks = [];
 
-            bubble.innerHTML = `<p>${formattedMessage.replace(/\n/g, '<br>')}</p>`;
+            // Extract <evaluation> blocks if the AI accidentally outputs them here
+            formattedMessage = formattedMessage.replace(/<evaluation>([\s\S]*?)<\/evaluation>/g, (match, inner) => {
+                evalBlocks.push(inner);
+                return `__EVAL_BLOCK_${evalBlocks.length - 1}__`;
+            });
+
+            formattedMessage = markdownToHtml(formattedMessage);
+
+            // Process evaluation blocks and inject the HTML widgets
+            evalBlocks.forEach((inner, index) => {
+                formattedMessage = formattedMessage.replace(`__EVAL_BLOCK_${index}__`, generateEvaluationWidgetHtml(inner));
+            });
+
+            bubble.innerHTML = `<p>${formattedMessage}</p>`;
             chatWindow.appendChild(bubble);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
 
         /**
-         * Shows or hides the typing indicator.
-         * @param {boolean} show - Whether to show the indicator.
+         * Shows or hides the typing indicator in Assistant Tab.
          */
-        function toggleTypingIndicator(show) {
+        function toggleAssistantTyping(show) {
             let indicator = document.getElementById('typing-indicator');
             if (show && !indicator) {
                 indicator = document.createElement('div');
@@ -189,45 +1729,93 @@
         }
         
         /**
-         * Handles the form submission for sending a message.
-         * @param {Event} e - The form submission event.
+         * Handles ASSISTANT Form Submission
          */
-        async function handleSendMessage(e) {
+        async function handleAssistantSubmit(e) {
             e.preventDefault();
 
-            if (API_KEY === "YOUR_API_KEY_HERE" || !API_KEY) {
-                 addMessage("It looks like the API key is missing. Please ask your instructor, Dr. Badawy, to add the key to the HTML file to enable the chatbot.", 'bot');
-                 return;
-            }
-
-            const userMessage = userInput.value.trim();
+            let userMessage = assistantInput.value.trim();
             if (!userMessage) return;
             
-            // Hide suggestion buttons after first interaction
-            if(suggestionsContainer) {
-                suggestionsContainer.style.display = 'none';
-            }
+            if(suggestionsContainer) suggestionsContainer.style.display = 'none';
 
-            addMessage(userMessage, 'user');
-            userInput.value = '';
-            userInput.disabled = true;
-            sendBtn.disabled = true;
-            sendBtn.classList.add('opacity-50');
+            addChatMessage(userMessage, 'user');
+            assistantInput.value = '';
+            assistantInput.disabled = true;
+            assistantSendBtn.disabled = true;
+            assistantSendBtn.classList.add('opacity-50');
 
-            toggleTypingIndicator(true);
+            toggleAssistantTyping(true);
 
             try {
                 const botResponse = await callGeminiApi(userMessage);
-                addMessage(botResponse, 'bot');
+                addChatMessage(botResponse, 'bot');
             } catch (error) {
                 console.error('API Call Error:', error);
-                addMessage('Sorry, I encountered an error. Please try again later.', 'bot');
+                addChatMessage('Sorry, I encountered an error. Please try again later.', 'bot');
             } finally {
-                toggleTypingIndicator(false);
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                sendBtn.classList.remove('opacity-50');
-                userInput.focus();
+                toggleAssistantTyping(false);
+                assistantInput.disabled = false;
+                assistantSendBtn.disabled = false;
+                assistantSendBtn.classList.remove('opacity-50');
+                assistantInput.focus();
+            }
+        }
+
+        /**
+         * Handles EVALUATION TOOL Form Submission
+         */
+        async function handleEvaluationSubmit(e) {
+            e.preventDefault();
+
+            let textToEval = evalInput.value.trim();
+            if (!textToEval) {
+                alert("Please paste document text or upload a file to evaluate.");
+                return;
+            }
+            
+            const selectedSection = evalSection.value;
+            let sectionInstruction = `[Target Section for Evaluation: ${selectedSection}]`;
+            if (selectedSection === "Let AI Decide") {
+                sectionInstruction = `[Target Section for Evaluation: Auto-detect what chapter/section this is (or if it is a Full Report) and evaluate only using the relevant rubric criteria]`;
+            }
+
+            const evalPrompt = `${sectionInstruction}\n\nPlease evaluate the following document text strictly based on the rubric. You MUST output your evaluation wrapped in the <evaluation> XML block as specified in the system prompt. DO NOT include conversational text outside the block.\n\n${textToEval}`;
+
+            // Update UI State
+            evalEmptyState.classList.add('hidden');
+            evalOutput.classList.add('hidden');
+            evalLoadingState.classList.remove('hidden');
+            
+            evalInput.disabled = true;
+            evalSendBtn.disabled = true;
+            evalSendBtn.classList.add('opacity-50');
+
+            try {
+                const botResponse = await callGeminiApi(evalPrompt);
+                
+                // Extract just the evaluation block
+                const reg = /<evaluation>([\s\S]*?)<\/evaluation>/;
+                const match = botResponse.match(reg);
+                
+                if (match) {
+                    evalOutput.innerHTML = generateEvaluationWidgetHtml(match[1]);
+                } else {
+                    evalOutput.innerHTML = `<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"><strong>Error parsing result:</strong> The AI did not return a valid evaluation block. Please try again.<br><br>Raw response: ${markdownToHtml(botResponse)}</div>`;
+                }
+                
+                evalLoadingState.classList.add('hidden');
+                evalOutput.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('API Call Error:', error);
+                evalLoadingState.classList.add('hidden');
+                evalOutput.innerHTML = `<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"><strong>Connection Error:</strong> Could not reach the evaluation service. Please try again later.</div>`;
+                evalOutput.classList.remove('hidden');
+            } finally {
+                evalInput.disabled = false;
+                evalSendBtn.disabled = false;
+                evalSendBtn.classList.remove('opacity-50');
             }
         }
 
@@ -237,7 +1825,7 @@
          * @returns {Promise<string>} - The bot's response text.
          */
         async function callGeminiApi(userQuery) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${apiKey}`;
 
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
@@ -247,7 +1835,7 @@
             };
 
             let response;
-            let retries = 3;
+            let retries = 5;
             let delay = 1000;
 
             for (let i = 0; i < retries; i++) {
@@ -290,17 +1878,73 @@
         }
 
         // Event Listeners
-        chatForm.addEventListener('submit', handleSendMessage);
+        assistantForm.addEventListener('submit', handleAssistantSubmit);
+        evalForm.addEventListener('submit', handleEvaluationSubmit);
 
+        // Evaluation File Upload Logic
+        evalUploadBtn.addEventListener('click', () => {
+            evalFile.click();
+        });
+
+        evalFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            evalInput.value = `Extracting text from ${file.name}...`;
+            evalInput.disabled = true;
+
+            try {
+                let extractedText = "";
+                
+                if (file.name.endsWith('.txt')) {
+                    extractedText = await file.text();
+                } else if (file.name.endsWith('.docx')) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    extractedText = result.value;
+                } else if (file.name.endsWith('.pdf')) {
+                    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+                    
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    let fullText = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + "\n";
+                    }
+                    extractedText = fullText;
+                } else {
+                    throw new Error("Unsupported file format. Please upload PDF, DOCX, or TXT.");
+                }
+
+                if (extractedText.trim() === "") {
+                    throw new Error("Could not extract text. The file might be empty or scanned as an image.");
+                }
+
+                evalInput.value = extractedText.substring(0, 15000); // Limit context length just in case
+
+            } catch (error) {
+                console.error("File processing error:", error);
+                evalInput.value = "";
+                alert(`Error processing file: ${error.message}`);
+            } finally {
+                evalInput.disabled = false;
+                evalFile.value = ''; // Reset input
+            }
+        });
+
+        // Assistant Suggestion Buttons
         document.querySelectorAll('.suggestion-btn').forEach(button => {
             button.addEventListener('click', () => {
-                userInput.value = button.textContent;
-                chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                assistantInput.value = button.textContent;
+                assistantForm.dispatchEvent(new Event('submit', { cancelable: true }));
             });
         });
         
-        userInput.focus();
+        assistantInput.focus();
     </script>
 </body>
 </html>
-
