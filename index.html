@@ -1326,10 +1326,13 @@
         const evalEmptyState = document.getElementById('eval-empty-state');
         const evalLoadingState = document.getElementById('eval-loading-state');
 
-        // Changed to the standard public model for GitHub Pages hosting
-        const API_MODEL = 'gemini-2.5-flash';
-        // Your public API Key
-        const apiKey = "AIzaSyDfo8vmLUMvhwTcrm_RAF53bxGRRZHTf8M"; 
+        // --- IMPORTANT FOR GITHUB DEPLOYMENT ---
+        // Right before you upload this to GitHub Pages, you MUST change these two lines to:
+        // const API_MODEL = 'gemini-1.5-flash';
+        // const apiKey = "AIzaSyDfo8vmLUMvhwTcrm_RAF53bxGRRZHTf8M";
+        // ---------------------------------------
+        const API_MODEL = 'gemini-2.5-flash-preview-09-2025';
+        const apiKey = ""; 
 
         // Rubric Data for dynamic table generation
         const RUBRIC_DATA = [
